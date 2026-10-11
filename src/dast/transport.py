@@ -1,4 +1,5 @@
 import time
+import ssl
 import httpx
 from .models import Observation
 from .policy import Policy
@@ -10,12 +11,13 @@ class BudgetExceeded(RuntimeError):
 
 class Transport:
     """One pooled client per role; shared scan budget and pacing across roles."""
-    def __init__(self, policy: Policy, protocol: str = "auto", client_factory=httpx.Client):
-        if protocol not in {"auto", "1.1", "2"}:
-            raise ValueError("Supported protocol modes: auto, 1.1, 2")
+    def __init__(self, policy: Policy, protocol: str = "auto", client_factory=httpx.Client, ca_file=None):
+        if protocol not in {"auto", "1.0", "1.1", "2"}:
+            raise ValueError("Supported protocol modes: auto, 1.0, 1.1, 2")
         self.policy = policy
         self.protocol = protocol
         self.client_factory = client_factory
+        self.context = ssl.create_default_context(cafile=ca_file)
         self.requests = 0
         self.next_request = 0.0
         self.started = time.monotonic()
@@ -24,8 +26,13 @@ class Transport:
         forbidden = {"host", "content-length", "transfer-encoding", "connection"}
         if any(k.lower() in forbidden for k in headers):
             raise ValueError("Transport routing/framing headers cannot be overridden")
+        options = {}
+        if self.protocol == "1.0":
+            from .http10 import HTTP10Adapter
+            options["transport"] = HTTP10Adapter(self.context, self.policy.timeout)
         return self.client_factory(
-            http2=self.protocol != "1.1", verify=True, follow_redirects=False,
+            **options,
+            http2=self.protocol in {"auto", "2"}, verify=self.context, follow_redirects=False,
             trust_env=False, timeout=httpx.Timeout(self.policy.timeout),
             limits=httpx.Limits(max_connections=1, max_keepalive_connections=1),
             headers={"User-Agent": "DAST-Tool/0.1", **headers},

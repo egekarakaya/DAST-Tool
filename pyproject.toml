@@ -9,6 +9,9 @@ description = "Bounded, evidence-oriented web assessment CLI"
 requires-python = ">=3.11"
 dependencies = ["httpx[http2]>=0.27,<1"]
 
+[project.optional-dependencies]
+test = ["hypercorn>=0.17,<1"]
+
 [project.scripts]
 dast = "dast.cli:main"
 

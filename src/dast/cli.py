@@ -41,13 +41,14 @@ def main(argv=None):
     run = sub.add_parser("scan")
     run.add_argument("target")
     run.add_argument("--profile", choices=["production", "standard"], default="production")
-    run.add_argument("--protocol", choices=["auto", "1.1", "2"], default="auto")
+    run.add_argument("--protocol", choices=["auto", "1.0", "1.1", "2"], default="auto")
     run.add_argument("--rps", type=float, default=1)
     run.add_argument("--max-requests", type=int, default=50)
     run.add_argument("--max-depth", type=int, default=3)
     run.add_argument("--max-seconds", type=float, default=120)
     run.add_argument("--max-body", type=int, default=262144)
     run.add_argument("--timeout", type=float, default=10)
+    run.add_argument("--ca-file", help="Trusted PEM CA bundle; certificate verification stays enabled")
     run.add_argument("--auth-config")
     run.add_argument("--openapi", help="Local OpenAPI 3 JSON file")
     run.add_argument("--seed", action="append", default=[])
@@ -63,7 +64,7 @@ def main(argv=None):
         if args.openapi:
             document = json.loads(Path(args.openapi).read_text(encoding="utf-8"))
             seeds.extend(api_seeds(document, args.target))
-        report = scan(policy, roles, seeds, not args.no_crawl, args.protocol)
+        report = scan(policy, roles, seeds, not args.no_crawl, args.protocol, ca_file=args.ca_file)
         write_report(report, args.output)
     except (ValueError, OSError, KeyError, TypeError) as exc:
         # Config/library error strings can include tokens; keep terminal output generic.

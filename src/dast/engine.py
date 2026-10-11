@@ -9,11 +9,11 @@ from .transport import BudgetExceeded, Transport
 
 
 def scan(policy, roles=None, seeds=None, crawl=True, protocol="auto",
-         checks=None, planner=None, transport=None) -> dict:
+         checks=None, planner=None, transport=None, ca_file=None) -> dict:
     roles = roles or [Role()]
     checks = checks if checks is not None else [PassiveChecks()]
     planner = planner or HTMLPlanner()
-    transport = transport or Transport(policy, protocol)
+    transport = transport or Transport(policy, protocol, ca_file=ca_file)
     findings, pages, errors = [], [], []
     seen_findings = set()
     stop = "completed"
@@ -79,7 +79,7 @@ def scan(policy, roles=None, seeds=None, crawl=True, protocol="auto",
     if not pages and not errors and stop == "completed":
         stop = "no-in-scope-seeds"
     return {"schema_version": 1, "target": public_url(policy.target),
-            "profile": policy.profile, "stop_reason": stop,
+            "profile": policy.profile, "requested_protocol": protocol, "stop_reason": stop,
             "requests": transport.requests, "pages": pages,
             "findings": findings, "errors": errors,
             "limitations": [
