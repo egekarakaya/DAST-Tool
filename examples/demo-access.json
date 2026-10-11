@@ -1,0 +1,11 @@
+{
+  "rules": [
+    {
+      "path": "/admin",
+      "allowed_roles": [
+        "admin"
+      ],
+      "marker": "DEMO_ADMIN_PANEL"
+    }
+  ]
+}

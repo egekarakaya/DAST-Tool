@@ -13,7 +13,10 @@ class Finding:
     confidence: str = "observed-configuration"
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        from .owasp import RULES
+        result = asdict(self)
+        result["owasp"], result["cwe"] = RULES.get(self.rule, ([], []))
+        return result
 
 
 @dataclass

@@ -1,0 +1,19 @@
+{
+  "roles": [
+    {
+      "name": "anonymous",
+      "paths": [
+        "/"
+      ]
+    },
+    {
+      "name": "admin",
+      "headers_env": {
+        "Authorization": "DAST_DEMO_ADMIN"
+      },
+      "paths": [
+        "/"
+      ]
+    }
+  ]
+}
