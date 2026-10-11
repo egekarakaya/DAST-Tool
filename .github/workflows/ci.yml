@@ -1,0 +1,59 @@
+name: Validate scanner
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install ".[test]"
+      - run: python -m unittest discover -s tests -v
+      - run: dast --help
+      - name: Local fixture scan after each code change
+        shell: bash
+        run: |
+          mkdir -p fixture
+          printf '<html><a href="/next.html">next</a></html>' > fixture/index.html
+          printf '<html>fixture</html>' > fixture/next.html
+          python -m http.server 8765 --bind 127.0.0.1 --directory fixture > /tmp/fixture.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for i in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8765/ > /dev/null; then break; fi
+            sleep 0.2
+          done
+          dast scan http://127.0.0.1:8765 --max-requests 10 --output reports
+          python -c 'import json; r=json.load(open("reports/report.json")); assert r["requests"] == 2; assert r["findings"]; assert not r["errors"]'
+      - name: OWASP demo CLI comparison
+        shell: bash
+        env:
+          DAST_DEMO_ADMIN: Bearer demo-admin
+        run: |
+          python examples/dummy_app.py --port 8080 --mode vulnerable > /tmp/dast-demo.log 2>&1 &
+          vulnerable_pid=$!
+          python examples/dummy_app.py --port 8081 --mode fixed > /tmp/dast-fixed.log 2>&1 &
+          fixed_pid=$!
+          trap 'kill "$vulnerable_pid" "$fixed_pid"' EXIT
+          for port in 8080 8081; do
+            for i in $(seq 1 30); do
+              if curl --fail --silent "http://127.0.0.1:$port/" > /dev/null; then break; fi
+              sleep 0.2
+            done
+          done
+          dast scan http://127.0.0.1:8080 --profile standard --active --rps 20 --max-requests 150 --auth-config examples/demo-auth.json --access-policy examples/demo-access.json --output reports/demo-vulnerable
+          dast scan http://127.0.0.1:8081 --profile standard --active --rps 20 --max-requests 150 --auth-config examples/demo-auth.json --access-policy examples/demo-access.json --output reports/demo-fixed
+          python -c 'import json; v=json.load(open("reports/demo-vulnerable/report.json")); f=json.load(open("reports/demo-fixed/report.json")); rules={x["rule"] for x in v["findings"]}; assert {"access-policy-violation", "sql-error-differential", "html-injection"} <= rules; assert not f["findings"]; assert not v["errors"]; assert not f["errors"]'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fixture-report-${{ matrix.python }}
+          path: reports/
+          retention-days: 7
