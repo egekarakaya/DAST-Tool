@@ -4,15 +4,15 @@
 
 | Requirement | 0.1 status | Next work |
 |---|---|---|
-| Crawl, assess, report | HTML BFS, passive rules, JSON/HTML | Better coverage, form inventory, browser adapter |
+| Crawl, assess, report | HTML BFS, OWASP-tagged rules/probes, JSON/HTML | Better coverage, form inventory, browser adapter |
 | HTTP/1.1, HTTP/2, TLS | Implemented through HTTPX, live local TLS/HTTP2 tests | Broader server interoperability |
 | HTTP/1.0 | GET adapter with verified TLS; live wire-version tests | Broader interoperability; no HTTP/1.0 keep-alive |
 | Keep-alive/compression | HTTPX pooling, gzip/deflate; live tests | Decompression resource hardening |
-| Authentication and permissions | Env headers, per-role sessions and path scope | Login flows, session validation, per-role authorization comparison |
+| Authentication and permissions | Env headers, per-role sessions/path scope, explicit access matrix | Login flows and session validation |
 | Automated/manual | Crawl and explicit seed CLI modes | Intercept/replay proxy and human-guided exploration |
 | Every code change | Local fixture scan on push/PR | Project-specific deploy-then-scan integration |
 | API security | OpenAPI concrete GET discovery + passive assessment | Auth matrix, parameter samples, REST/GraphQL checks |
-| Proof-based scanning | Configuration evidence only | Baseline/control pairs and safe exploit reproduction |
+| Proof-based scanning | Configuration evidence, SQL differential, inert HTML proof, operator-defined access expectations | Broader safe confirmation and browser-context verification |
 | Speed adjustment | Global RPS and one concurrent request | Adaptive throttling with latency baselines |
 | Scheduled | Opt-in GitHub workflow | External scheduler or CLI daemon if justified |
 | Production safety | GET-only, origin/path gates, budgets, breakers | Operator dry-run inventory, explicit endpoint exclusions |
@@ -23,13 +23,13 @@
 
 1. Validate this passive MVP on owned fixtures, including TLS/HTTP2, compression,
    cookies and malicious redirects. Benchmark peak RAM and request throughput.
-2. Authentication: credential providers, OAuth/browser login, logged-in assertions,
-   session refresh and role-aware endpoint inventory. An HTTP 200 alone must never
+2. Authentication: expand the explicit access-policy matrix with credential providers,
+   OAuth/browser login, logged-in assertions, session refresh and role-aware inventory. An HTTP 200 alone must never
    be interpreted as proof of an authorization bypass.
-3. Proof engine: typed request/response evidence with secret redaction, baseline
-   and control requests, reproducibility and confidence levels. Add safe checks
+3. Proof engine: expand the implemented baseline/control query probes with typed
+   reproducibility and browser-context confirmation. Add safe checks
    individually with vulnerable and non-vulnerable fixtures.
-4. API checks and optional active **staging-only** profile; no production escalation
+4. Broader API checks and extension of the opt-in active staging probes; no production escalation
    by an agent. Add reporting formats and incremental scan baselines.
 5. Optional ZAP adapter: separately installed engine for deeper testing,
    explicit resource/process limits and no silent feature delegation.
@@ -38,8 +38,9 @@
 
 ## Current boundaries
 
-The scanner does not test SQL injection, XSS exploitation, SSRF, RCE, uploads,
-business logic or object-level authorization. Missing headers are hardening
+The scanner offers SQL error differential and inert HTML reflection checks, but does
+not confirm SQLi exploitation or execute XSS. SSRF, RCE, uploads, business logic
+and automatic object-level authorization discovery remain unimplemented. Missing headers are hardening
 observations, not evidence of successful exploitation. HTTP/1.0 transport supports
 GET only and deliberately closes each connection.
 
