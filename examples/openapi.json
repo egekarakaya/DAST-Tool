@@ -1,0 +1,9 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Example API", "version": "1"},
+  "paths": {
+    "/api/health": {"get": {"responses": {"200": {"description": "Healthy"}}}},
+    "/api/users/{id}": {"get": {"responses": {"200": {"description": "User"}}}},
+    "/api/users": {"post": {"responses": {"201": {"description": "Created"}}}}
+  }
+}
