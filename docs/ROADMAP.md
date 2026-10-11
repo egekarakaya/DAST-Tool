@@ -5,9 +5,9 @@
 | Requirement | 0.1 status | Next work |
 |---|---|---|
 | Crawl, assess, report | HTML BFS, passive rules, JSON/HTML | Better coverage, form inventory, browser adapter |
-| HTTP/1.1, HTTP/2, TLS | Implemented through HTTPX, CI mock/HTTP fixture coverage | Live TLS/HTTP2 integration tests |
-| HTTP/1.0 | Not implemented | Isolated HTTP/1.0 transport and protocol compliance tests |
-| Keep-alive/compression | HTTPX pooling, gzip/deflate | Compression/pooling integration tests and decompression resource hardening |
+| HTTP/1.1, HTTP/2, TLS | Implemented through HTTPX, live local TLS/HTTP2 tests | Broader server interoperability |
+| HTTP/1.0 | GET adapter with verified TLS; live wire-version tests | Broader interoperability; no HTTP/1.0 keep-alive |
+| Keep-alive/compression | HTTPX pooling, gzip/deflate; live tests | Decompression resource hardening |
 | Authentication and permissions | Env headers, per-role sessions and path scope | Login flows, session validation, per-role authorization comparison |
 | Automated/manual | Crawl and explicit seed CLI modes | Intercept/replay proxy and human-guided exploration |
 | Every code change | Local fixture scan on push/PR | Project-specific deploy-then-scan integration |
@@ -40,8 +40,8 @@
 
 The scanner does not test SQL injection, XSS exploitation, SSRF, RCE, uploads,
 business logic or object-level authorization. Missing headers are hardening
-observations, not evidence of successful exploitation. HTTP/1.0 is intentionally
-rejected by the CLI until it has a tested transport.
+observations, not evidence of successful exploitation. HTTP/1.0 transport supports
+GET only and deliberately closes each connection.
 
 A single worker keeps request concurrency low but is not a quantified resource
 guarantee. Response body bytes, discovered URLs and total requests are bounded;

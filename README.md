@@ -13,6 +13,7 @@ python -m pip install .
 dast scan https://staging.example.com --profile production --output reports
 dast scan https://staging.example.com --no-crawl --seed /api/health
 dast scan https://staging.example.com --openapi examples/openapi.json
+python -m pip install ".[test]"
 python -m unittest discover -s tests -v
 ```
 
@@ -23,9 +24,10 @@ A clean report does **not** establish that an application has no vulnerabilities
 
 ## Supported today
 
-- HTTP/1.1 and TLS-verified HTTPS; HTTP/2 negotiation using `--protocol auto` (default).
+- Explicit HTTP/1.0 mode via \`--protocol 1.0\`, HTTP/1.1 and TLS-verified HTTPS; HTTP/2 negotiation using `--protocol auto` (default).
   `--protocol 2` requires negotiated HTTP/2; `--protocol 1.1` disables HTTP/2.
-- Pooled keep-alive connections, gzip/deflate decoding through HTTPX.
+- Pooled keep-alive for HTTP/1.1–2; HTTP/1.0 closes each connection. Gzip/deflate decoding through HTTPX.
+  Custom trust bundles use \`--ca-file path/to/ca.pem\`; certificate checks remain enabled.
 - Breadth-first HTML link discovery, same-origin redirects, depth/request/body/time budgets.
 - Automated crawling; manually supplied endpoint assessment with `--no-crawl --seed`.
   Manual mode is CLI seed selection, **not** an intercepting browser proxy.
@@ -77,10 +79,13 @@ path allowlists and application monitoring. An in-flight operation may exceed
 the total duration budget by up to its HTTP timeout; decoded-body retention is
 bounded, but HTTP library decompression buffers are not a hard process-memory cap.
 There are no measured CPU/RAM benchmarks yet.
+HTTP/1.0 uses CPython protocol selectors covered by local wire tests; HTTP/1.0
+keep-alive is deliberately not attempted. Reports record requested mode separately
+from the response version, since servers may reply with a newer version.
 
 ## CI and scheduled scans
 
-`.github/workflows/ci.yml` validates Python 3.11–3.13 and scans a local fixture
+`.github/workflows/ci.yml` validates Python 3.11–3.13, including live loopback HTTP/TLS/HTTP2 fixtures, and scans a local fixture
 after pushes/PRs. It never accepts an external target from PR code.
 
 `.github/workflows/target-scan.yml` runs manually, on main pushes and Mondays
